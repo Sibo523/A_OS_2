@@ -1,11 +1,11 @@
 CC = gcc 
 Flags = -Wall -g -Wextra
 
-all:mynetcat  
+all:mync 
 
-mynetcat: mynetcat.c
+mync: mynetcat.c
 	$(CC) $(Flags) -o $@ $^
 
 Phony: clean all 
 clean:
-	rm -f mynetcat
+	rm -f mync
