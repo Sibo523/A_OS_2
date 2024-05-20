@@ -15,8 +15,8 @@ bool user_turn = true;
 
 int main(int argc, char *argv[]) {
     if (argc != 2) { // Expect the program name and one argument containing 9 bot moves
-        printf("Usage: %s <9 bot moves>\n", argv[0]);
-        return -1;
+        perror("Usage: of <9 bot moves>\n");
+        exit(EXIT_FAILURE);
     }
 
     if (strlen(argv[1]) != 9) { // Check if the provided moves string is exactly 9 characters long
@@ -42,14 +42,17 @@ int main(int argc, char *argv[]) {
     while (!isFinished(Board, &who_won)) {
         printBoard(Board);
         if (user_turn) {
-            int x;
+            char  x = -1;
             printf("Enter your move ");
-            scanf("%d", &x);
-            if (x < 10 && x > 0 && ptr[x-1] != ' ' ) {
+            scanf(" %c", &x);
+            int b = atoi(&x);
+            if (b > 10 || b < 0 || ptr[b-1] != ' ' ) {
+                printf("%d",b);
                 printf("Invalid move. Try again.\n");
                 continue;
             }
-            make_move(ptr, x, user_turn);
+            printf("shit.\n");
+            make_move(ptr, b, user_turn);
             user_turn = false;
         } else {
             while (ptr[BotMoves[bot_index] - '1'] == 'X' || ptr[BotMoves[bot_index] - '1'] == 'O') {

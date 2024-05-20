@@ -1,7 +1,7 @@
 CC = gcc 
 Flags = -Wall -g -Wextra
 
-all:file1  
+all:ttt
 
 ttt: main.c
 	$(CC) $(Flags) -o $@ $^
