@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include <unistd.h> // Include the <unistd.h> header file
 
 int main(int argc, char *argv[]){
@@ -10,7 +12,8 @@ int main(int argc, char *argv[]){
     // Setup the first pipe
     if (pipe(inputPipe) == -1) {
         perror("Failed to create inputPipe");
-        exit(-1);
+
+        exit(EXIT_FAILURE);
     }
 
     // Create the first child process to read the phonebook
@@ -24,7 +27,7 @@ int main(int argc, char *argv[]){
         // Execute 'cat' to read the phonebook
         execlp("cat", "cat", "phonebook.txt", NULL);
         perror("Execution of 'cat' failed");
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
     return 0;
 }

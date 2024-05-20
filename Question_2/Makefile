@@ -3,7 +3,7 @@ Flags = -Wall -g -Wextra
 
 all:file1  
 
-file1: main.c
+file1: mync.c
 	$(CC) $(Flags) -o $@ $^
 
 Phony: clean all 
