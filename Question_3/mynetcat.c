@@ -179,60 +179,6 @@ int main(int argc, char *argv[]){
         
         return 0;
     }
-    // if(argc == 8){ // Open client
-    //     int client_sock;
-    //     struct sockaddr_in server_addr;
-    //     char mode = *(argv[3]+1); //-lemur
-    //     client_sock = socket(AF_INET,SOCK_STREAM,0);
-    //     if(client_sock < 0){
-    //         perror("socket failed");
-    //         exit(EXIT_FAILURE);
-    //     }
-    //     server_addr.sin_family = AF_INET;
-    //     server_addr.sin_port = atoi(argv[4]);
-    //     server_addr.sin_addr.s_addr = inet_addr(argv[5]);
-    //     if(connect(client_sock,(struct sockaddr *)&server_addr,sizeof(server_addr)) < 0){
-    //         perror("connect failed");
-    //         exit(EXIT_FAILURE);
-    //     }
-    //     char *exe = strtok(argv[2]," ");
-    //     char *arg = strtok(NULL," ");
-    //     char *path = "../Question_1/ttt";
-    //     if(!strcmp("ttt",exe)){
-    //         exe = path;
-    //     }
-    //     pid_t pid = fork();
-    //     if(pid < 0){
-    //         perror("fork failed");
-    //         exit(EXIT_FAILURE);
-    //     }
-    //     if(pid == 0){
-    //         switch(mode){
-    //             case'i':
-    //                 {
-    //                     dup2(client_sock,0);
-    //                     break;
-    //                 }
-    //             case 'o':
-    //                 {
-    //                     dup2(client_sock,1);
-    //                     break;
-    //                 }
-    //             case 'b':
-    //                 {
-    //                     dup2xasASDSDPF;FJNSAFJ](client_sock,0);
-    //                     dup2(client_sock,1);
-    //                     break;
-    //                 }
-    //         }
-    //         // execlp(exe,exe,arg,NULL);
-    //         perror("Execution of path failed");
-    //         exit(EXIT_FAILURE);
-    //     }
         int status;
-        // waitpid(pid,&status,0);
-        // close(client_sock);
         return 0;
-    // }
-    // return 0;
 }
