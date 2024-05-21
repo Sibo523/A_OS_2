@@ -16,6 +16,7 @@ bool user_turn = true;
 int main(int argc, char *argv[]) {
     if (argc != 2) { // Expect the program name and one argument containing 9 bot moves
         perror("Usage: of <9 bot moves>\n");
+        perror(argv[1]);
         exit(EXIT_FAILURE);
     }
 
