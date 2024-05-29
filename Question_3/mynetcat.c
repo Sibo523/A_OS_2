@@ -5,18 +5,13 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <stdbool.h>
- 
-#define index 5
-
-//mync -e “ttt 123456789” -i TCPS4050 -o TCPClocalhost,4455
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <arpa/inet.h>
+#include <signal.h>
+#include <time.h>
+#define index 4
 #include <sys/wait.h>
 #include <stdbool.h>
+
+//mync -e “ttt 123456789” -i TCPS4050 -o TCPClocalhost,4455
 #define BUFFER_SIZE 1024
 
 int create_client(int port, char mode, const char* server_ip) {
@@ -69,7 +64,7 @@ int create_client(int port, char mode, const char* server_ip) {
             write(client_sock, buffer, strlen(buffer));
         }
         close(client_sock);
-        #include <signal.h>
+      
 
         kill(pid, SIGKILL); // Kill child process reading from server
     }
@@ -123,17 +118,8 @@ int create_server(char mode, int port, const char* exe, const char* arg) {
         execlp(exe, exe, "123456789", NULL);
         perror("Execution of exe failed");
         exit(EXIT_FAILURE);
-    } else {
-        char buffer[BUFFER_SIZE];
-        while (1) {
-            ssize_t bytes_read = read(client_sock, buffer, BUFFER_SIZE - 1);
-            if (bytes_read <= 0) {
-                break; // Exit loop on read error or client disconnect
-            }
-            buffer[bytes_read] = '\0';
-            // printf("Received from client: %s\n", buffer);
-        }
     }
+    
     int status;
     waitpid(pid, &status, 0);
     close(client_sock);
@@ -150,7 +136,7 @@ int main(int argc, char *argv[]){
 
     bool isServer = false;
     if(argc == index+1){ 
-        char mode = *(argv[4]+1); //-lemur
+        char mode = *(argv[3]+1); //-lemur
         // printf("%c\n",mode);
         char *token; //contains the port 
         if (strchr(argv[index],'S')){//if it contains S, then it's a server
@@ -160,9 +146,11 @@ int main(int argc, char *argv[]){
             isServer = true;
         }
         if (isServer){
-            printf("Server\n");
+            // printf("Server\n");
             char *exe = strtok(argv[2]," ");
-            printf("%s\n",exe);
+            // printf("%s\n",exe);
+            // fflush(stdin);
+            // fflush(stdout);
             char *arg = strtok(NULL," ");
             create_server(mode ,atoi(token),exe,arg);
         }
@@ -179,60 +167,6 @@ int main(int argc, char *argv[]){
         
         return 0;
     }
-    // if(argc == 8){ // Open client
-    //     int client_sock;
-    //     struct sockaddr_in server_addr;
-    //     char mode = *(argv[3]+1); //-lemur
-    //     client_sock = socket(AF_INET,SOCK_STREAM,0);
-    //     if(client_sock < 0){
-    //         perror("socket failed");
-    //         exit(EXIT_FAILURE);
-    //     }
-    //     server_addr.sin_family = AF_INET;
-    //     server_addr.sin_port = atoi(argv[4]);
-    //     server_addr.sin_addr.s_addr = inet_addr(argv[5]);
-    //     if(connect(client_sock,(struct sockaddr *)&server_addr,sizeof(server_addr)) < 0){
-    //         perror("connect failed");
-    //         exit(EXIT_FAILURE);
-    //     }
-    //     char *exe = strtok(argv[2]," ");
-    //     char *arg = strtok(NULL," ");
-    //     char *path = "../Question_1/ttt";
-    //     if(!strcmp("ttt",exe)){
-    //         exe = path;
-    //     }
-    //     pid_t pid = fork();
-    //     if(pid < 0){
-    //         perror("fork failed");
-    //         exit(EXIT_FAILURE);
-    //     }
-    //     if(pid == 0){
-    //         switch(mode){
-    //             case'i':
-    //                 {
-    //                     dup2(client_sock,0);
-    //                     break;
-    //                 }
-    //             case 'o':
-    //                 {
-    //                     dup2(client_sock,1);
-    //                     break;
-    //                 }
-    //             case 'b':
-    //                 {
-    //                     dup2xasASDSDPF;FJNSAFJ](client_sock,0);
-    //                     dup2(client_sock,1);
-    //                     break;
-    //                 }
-    //         }
-    //         // execlp(exe,exe,arg,NULL);
-    //         perror("Execution of path failed");
-    //         exit(EXIT_FAILURE);
-    //     }
-        int status;
-        // waitpid(pid,&status,0);
-        // close(client_sock);
-        return 0;
-    // }
-    // return 0;
+    int status;
+    return 0;
 }

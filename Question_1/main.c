@@ -41,10 +41,11 @@ int main(int argc, char *argv[]) {
 
     char *ptr = (char *)Board;
     while (!isFinished(Board, &who_won)) {
-        printBoard(Board);
         if (user_turn) {
+            printBoard(Board);
             char  x = -1;
             printf("Enter your move ");
+            fflush(stdout);
             scanf(" %c", &x);
             int b = atoi(&x);
             if (b > 10 || b < 0 || ptr[b-1] != ' ' ) {

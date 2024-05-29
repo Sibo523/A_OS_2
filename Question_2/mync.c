@@ -15,8 +15,7 @@ int main(int argc, char *argv[])
         printf("Usage: ./%s -e 'ttt 123456789'\n", argv[0]);
         return -1;
     }
-    // Setup the first pipe
-    // Setup the first pipe
+    // Parse the arguments
     char *exe = strtok(argv[2], " ");
     char *arg = strtok(NULL, " "); // Use NULL instead of 0 for subsequent tokens
 
@@ -25,6 +24,10 @@ int main(int argc, char *argv[])
     
     if (!strcmp("ttt",exe)){
         exe = path;
+    }
+    else{
+        printf("Invalid executable\n");
+        return -1;
     }
 
     pid_t pid = fork();
