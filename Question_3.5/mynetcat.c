@@ -37,48 +37,48 @@ int create_client(int port, char mode, const char *server_ip)
         perror("connect failed");
         exit(EXIT_FAILURE);
     }
-        switch (mode)
-    {
-    case 'i':
-        dup2(client_sock, 0);
-        break;
-    case 'o':
-        dup2(client_sock, 1);
-        break;
-    case 'b':
-        printf("barasi\n");
-        dup2(client_sock, 0);
-        dup2(client_sock, 1);
-        break;
+        pid_t pid = fork();
+    if (pid < 0) {
+        perror("fork failed");
+        exit(EXIT_FAILURE);
     }
-    while(1)
-        {
 
-            fprintf(stdout," %s", buffer);
-            // int byteSent = write(client_sock, buffer, BUFFER_SIZE); 
-            // if(byteSent <= 0){
-            //     close(client_sock);
-            //     perror("cyka");
-            //     exit(EXIT_FAILURE);
-            // }
-            printf("hey\n");
-            // printf("%d\n", byteSent);
-            // int bytes = recv(client_sock, buffer, BUFFER_SIZE, 0);
-            // if(bytes <= 0){
-            //     close(client_sock);
-            //     perror("cyka blyt");
-            //     exit(EXIT_FAILURE);
-            // }
-            fscanf(stdin," %s", &buffer);
-            fflush(stdout);
-            
+    if (pid == 0) { // Child process: read from server
+        while (1) {
+            ssize_t bytes_read = read(client_sock, buffer, BUFFER_SIZE - 1);
+            if (bytes_read <= 0) {
+                break; // Exit loop on read error or server disconnect
+            }
+            buffer[bytes_read] = '\0';
+            printf("Received from server: %s\n", buffer);
         }
+        close(client_sock);
+        exit(0);
+    } else { // Parent process: write to server
+        while (1) {
+            printf("Enter message (-1 to quit): ");
+            fgets(buffer, sizeof(buffer), stdin);
+            buffer[strcspn(buffer, "\n")] = '\0'; // Remove newline character
+
+            if (strcmp(buffer, "-1") == 0) {
+                break; // Exit loop if user enters -1
+            }
+
+            write(client_sock, buffer, strlen(buffer));
+        }
+        close(client_sock);
+      
+
+        kill(pid, SIGKILL); // Kill child process reading from server
+    }
     return 0;
 }
 int create_server(char mode, int port, const char *exe, const char *arg)
 {
     int server_sock, client_sock;
     struct sockaddr_in server_addr, client_addr;
+    char buffer[BUFFER_SIZE];
+
     server_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (server_sock < 0)
     {
@@ -105,48 +105,40 @@ int create_server(char mode, int port, const char *exe, const char *arg)
         perror("accept failed");
         exit(EXIT_FAILURE);
     }
-
-    switch (mode)
-    {
-    case 'i':
-        dup2(client_sock, 0);
-        break;
-    case 'o':
-        dup2(client_sock, 1);
-        break;
-    case 'b':
-        printf("barasi\n");
-        dup2(client_sock, 0);
-        dup2(client_sock, 1);
-        break;
-    }
-    
-    char buffer[BUFFER_SIZE];
-    while(1)
-    {
-        fscanf(stdin," %s", &buffer);
-        // int bytes = recv(client_sock, buffer, BUFFER_SIZE, 0);
-        // if(bytes <= 0){
-        //     close(client_sock);
-        //     close(server_sock);
-        //     perror("MA");
-        //     exit(EXIT_FAILURE);
-        // }
-        // printf("%d",bytes);
-        fflush(stdout);
-        fprintf(stdout," %s", buffer);
-        // int byteSent = write(client_sock, buffer, BUFFER_SIZE); 
-        // if(byteSent <= 0){
-        //     close(client_sock);
-        //     close(server_sock);
-        //     perror("ARUMA");
-        //     exit(EXIT_FAILURE);
-        // }
-        fflush(stdin);
+    pid_t pid = fork();
+    if (pid < 0) {
+        perror("fork failed");
+        exit(EXIT_FAILURE);
     }
 
-    close(client_sock);
-    close(server_sock);
+    if (pid == 0) { // Child process: read from server
+        while (1) {
+            ssize_t bytes_read = read(client_sock, buffer, BUFFER_SIZE - 1);
+            if (bytes_read <= 0) {
+                break; // Exit loop on read error or server disconnect
+            }
+            buffer[bytes_read] = '\0';
+            printf("Received from server: %s\n", buffer);
+        }
+        close(client_sock);
+        exit(0);
+    } else { // Parent process: write to server
+        while (1) {
+            printf("Enter message (-1 to quit): ");
+            fgets(buffer, sizeof(buffer), stdin);
+            buffer[strcspn(buffer, "\n")] = '\0'; // Remove newline character
+
+            if (strcmp(buffer, "-1") == 0) {
+                break; // Exit loop if user enters -1
+            }
+
+            write(client_sock, buffer, strlen(buffer));
+        }
+        close(client_sock);
+      
+
+        kill(pid, SIGKILL); // Kill child process reading from server
+    }
     return 0;
 }
 
