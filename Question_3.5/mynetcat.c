@@ -10,39 +10,35 @@
 #define index 3
 #include <sys/wait.h>
 #include <stdbool.h>
+void runprogram(pid_t pid,char mode,int client_sock,int server_sock,char *exe, char *arg)
+{
+    if (pid == 0) {
+        switch (mode) {
+            case 'i':
+                dup2(client_sock, 0);
+                break;
+            case 'o':
+                dup2(client_sock, 1);
+                break;
+            case 'b':
+                dup2(client_sock, 0);
+                dup2(client_sock, 1);
+                break;
+        }
+        execlp(exe, exe, "123456789", NULL);
+        perror("Execution of exe failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    int status;
+    waitpid(pid, &status, 0);
+    close(client_sock);
+    close(server_sock);
+}
 
 // mync -e “ttt 123456789” -i TCPS4050 -o TCPClocalhost,4455
 #define BUFFER_SIZE 1024
-
-int create_client(int port, char mode, const char *server_ip)
-{
-    int client_sock;
-    struct sockaddr_in server_addr;
-    char buffer[BUFFER_SIZE];
-    memcpy(buffer, "aviva", 1024);
-
-    client_sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (client_sock < 0)
-    {
-        perror("socket failed");
-        exit(EXIT_FAILURE);
-    }
-
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(port);
-    server_addr.sin_addr.s_addr = inet_addr(server_ip);
-
-    if (connect(client_sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
-    {
-        perror("connect failed");
-        exit(EXIT_FAILURE);
-    }
-        pid_t pid = fork();
-    if (pid < 0) {
-        perror("fork failed");
-        exit(EXIT_FAILURE);
-    }
-
+void talking(int client_sock,pid_t pid,char* buffer){
     if (pid == 0) { // Child process: read from server
         while (1) {
             ssize_t bytes_read = read(client_sock, buffer, BUFFER_SIZE - 1);
@@ -71,9 +67,40 @@ int create_client(int port, char mode, const char *server_ip)
 
         kill(pid, SIGKILL); // Kill child process reading from server
     }
+}
+int create_client(int port, char mode, const char *server_ip)
+{
+    int client_sock;
+    struct sockaddr_in server_addr;
+    char buffer[BUFFER_SIZE];
+    memcpy(buffer, "aviva", 1024);
+
+    client_sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (client_sock < 0)
+    {
+        perror("socket failed");
+        exit(EXIT_FAILURE);
+    }
+
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(port);
+    server_addr.sin_addr.s_addr = inet_addr(server_ip);
+
+    if (connect(client_sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
+    {
+        perror("connect failed");
+        exit(EXIT_FAILURE);
+    }
+    pid_t pid = fork();
+    if (pid < 0) {
+        perror("fork failed");
+        exit(EXIT_FAILURE);
+    }
+
+    talking(client_sock,pid,buffer);
     return 0;
 }
-int create_server(char mode, int port, const char *exe, const char *arg)
+int create_server(char mode, int port, const char *exe, const char *arg,int flag)
 {
     int server_sock, client_sock;
     struct sockaddr_in server_addr, client_addr;
@@ -98,6 +125,11 @@ int create_server(char mode, int port, const char *exe, const char *arg)
         perror("listen failed");
         exit(EXIT_FAILURE);
     }
+    if (strcmp(exe,"ttt") != 0){
+        perror("exe is not ttt sadge");
+        exit(EXIT_FAILURE);
+    }
+    exe = "../Question_1/ttt";
     socklen_t client_addr_size = sizeof(client_addr);
     client_sock = accept(server_sock, (struct sockaddr *)&client_addr, &client_addr_size);
     if (client_sock < 0)
@@ -110,34 +142,11 @@ int create_server(char mode, int port, const char *exe, const char *arg)
         perror("fork failed");
         exit(EXIT_FAILURE);
     }
-
-    if (pid == 0) { // Child process: read from server
-        while (1) {
-            ssize_t bytes_read = read(client_sock, buffer, BUFFER_SIZE - 1);
-            if (bytes_read <= 0) {
-                break; // Exit loop on read error or server disconnect
-            }
-            buffer[bytes_read] = '\0';
-            printf("Received from server: %s\n", buffer);
-        }
-        close(client_sock);
-        exit(0);
-    } else { // Parent process: write to server
-        while (1) {
-            printf("Enter message (-1 to quit): ");
-            fgets(buffer, sizeof(buffer), stdin);
-            buffer[strcspn(buffer, "\n")] = '\0'; // Remove newline character
-
-            if (strcmp(buffer, "-1") == 0) {
-                break; // Exit loop if user enters -1
-            }
-
-            write(client_sock, buffer, strlen(buffer));
-        }
-        close(client_sock);
-      
-
-        kill(pid, SIGKILL); // Kill child process reading from server
+    if(flag){
+        talking(client_sock,pid,buffer);
+    }
+    else{
+        runprogram(pid,mode,client_sock,server_sock,exe,arg);
     }
     return 0;
 }
@@ -146,7 +155,6 @@ int main(int argc, char *argv[])
 {
 
     bool isServer = false;
-    // if(argc == index+1){
     int flag = 0;
 
     puts("here");
@@ -169,14 +177,12 @@ int main(int argc, char *argv[])
         token = strtok(NULL, delim);
         isServer = true;
     }
-    puts("here");
     if (isServer)
     {
-        // printf("Server\n");
         char *exe = strtok(argv[2], " ");
-
+        int flag = 1;
         char *arg = strtok(NULL, " ");
-        create_server(mode, atoi(token), exe, arg);
+        create_server(mode, atoi(token), exe, arg,flag);
     }
     else
     {
@@ -190,8 +196,5 @@ int main(int argc, char *argv[])
         create_client(port, mode, "127.0.0.1");
     }
 
-    return 0;
-    // }
-    int status;
     return 0;
 }

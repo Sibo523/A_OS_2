@@ -95,7 +95,10 @@ int create_server(char mode, int port, const char* exe, const char* arg) {
         perror("accept failed");
         exit(EXIT_FAILURE);
     }
-
+    if (strcmp(exe, "ttt") != 0) {
+        perror("Invalid executable");
+        exit(EXIT_FAILURE);
+    }
     exe = "../Question_1/ttt";
     pid_t pid = fork();
     if (pid < 0) {
