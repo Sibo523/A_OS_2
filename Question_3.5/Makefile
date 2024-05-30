@@ -1,5 +1,5 @@
 CC = gcc 
-FLAGS = -Wall -O2 -fprofile-arcs -ftest-coverage
+FLAGS = -Wall -O2 -fprofile-arcs -ftest-coverage -g
 
 all:mync 
 

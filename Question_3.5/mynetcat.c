@@ -74,7 +74,7 @@ int create_client(int port, char mode, const char *server_ip)
     struct sockaddr_in server_addr;
     char buffer[BUFFER_SIZE];
     memcpy(buffer, "aviva", 1024);
-
+    printf("%d",port);
     client_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (client_sock < 0)
     {
@@ -152,48 +152,66 @@ int create_server(char mode, int port, const char *exe, const char *arg,int flag
     return 0;
 }
 
-int main(int argc, char *argv[])
-{
-
+int main(int argc, char *argv[]) {
     bool isServer = false;
-    int flag = 0;
+    int flag = 1;
+    char *execArgs = NULL;
+    char mode = 0;
+    int type ;
+    int port = 0;
+    char *exe ;
+    char *arg ;
 
-    puts("here");
-    if (getopt(argc, argv, "e") != -1)
-    {
-        flag = true;
+    int opt;
+    while ((opt = getopt(argc, argv, "e:iob")) != -1) {
+        switch (opt) {
+            case 'e':
+             // optarg now points to the argument of -e
+                puts("has e");
+                flag = 0;
+                break;
+            case 'i':
+                mode = opt;
+                puts("has i");
+                break;
+            case 'o':
+                mode = opt;
+                puts("has o");
+                break;
+            case 'b':
+                mode = opt;
+                puts("has b");
+                break;
+            default:
+                fprintf(stderr, "Usage: %s [-e execArgs] -{i,o,b} TCPS4050/TCPC4050\n", argv[0]);
+                exit(EXIT_FAILURE);
+        }
     }
+    char *l;
+    for (int i = 0; i < argc; i++) {
+        if (strstr(argv[i], "ttt")) {
+            exe = strtok(argv[i]," ");
+            arg = strtok(NULL," ");
+        }
+        if(strstr(argv[i],"TCPS")){
+            puts("hello man");
+            isServer = true;
+            l= strtok(argv[i],"S");
+            port = atoi(strtok(NULL,"S"));
+            
+        }
+        if(strstr(argv[i],"TCPC")){
+            puts("hello man 2");
+            isServer = false;
+            l= strtok(argv[i],"C");
+            port = atoi(strtok(NULL,"C"));
+            port = atoi(strtok(NULL,"C"));
 
-    puts("here2");
-    char mode = *(argv[3 - flag] + 1); //-lemur
-    puts("here");
-
-    // printf("%c\n",mode);
-    char *token; // contains the port
-    puts("here3");
-    if (strchr(argv[3], 'S'))
-    { // if it contains S, then it's a server
-        char *delim = "S";
-        token = strtok(argv[3], delim);
-        token = strtok(NULL, delim);
-        isServer = true;
+        }
     }
-    if (isServer)
-    {
-        char *exe = strtok(argv[1], " ");
-        int flag = 1;
-        char *arg = strtok(NULL, " ");
-        create_server(mode, atoi(token), exe, arg,flag);
-    }
-    else
-    {
-        char *delim = "C";
-        token = strtok(argv[index], delim);
-        token = strtok(NULL, delim);
-        token = strtok(NULL, delim);
-        int port = atoi(token);
-        printf("%d\n", port);
-        printf("Client\n");
+    if (isServer) {
+        create_server(mode, port, exe, arg, flag);
+    } else {
         create_client(port, mode, "127.0.0.1");
     }
 
