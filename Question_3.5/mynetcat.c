@@ -126,6 +126,7 @@ int create_server(char mode, int port, const char *exe, const char *arg,int flag
         exit(EXIT_FAILURE);
     }
     if (strcmp(exe,"ttt") != 0){
+        puts(exe);
         perror("exe is not ttt sadge");
         exit(EXIT_FAILURE);
     }
@@ -179,7 +180,7 @@ int main(int argc, char *argv[])
     }
     if (isServer)
     {
-        char *exe = strtok(argv[2], " ");
+        char *exe = strtok(argv[1], " ");
         int flag = 1;
         char *arg = strtok(NULL, " ");
         create_server(mode, atoi(token), exe, arg,flag);
