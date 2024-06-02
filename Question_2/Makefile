@@ -1,11 +1,11 @@
 CC = gcc 
 Flags = -Wall -g -Wextra
 
-all:file1  
+all:mync
 
-file1: mync.c
+mync: mync.c
 	$(CC) $(Flags) -o $@ $^
 
 Phony: clean all 
 clean:
-	rm -f file1 
+	rm -f mync 
