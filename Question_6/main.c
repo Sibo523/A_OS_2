@@ -5,7 +5,7 @@
 
 #define Size 3
 
-bool isFinished(char Board[Size][Size], int *who_won);
+bool isFinished(char Board[Size][Size], bool *who_won);
 bool isLegal(char BotMoves[9]);
 bool make_move(char *ptr, int pos, bool user_turn);
 bool draw(char Board[Size][Size]);
@@ -27,8 +27,7 @@ int main(int argc, char *argv[]) {
 
     char BotMoves[9];
     int bot_index = 0;
-    int a = 2;
-    int* who_won = &a; // true User won, false Bot won
+    bool who_won; // true User won, false Bot won
     char Board[Size][Size] = { { ' ', ' ', ' ' }, { ' ', ' ', ' ' }, { ' ', ' ', ' ' } };
 
     for (int i = 0; i < 9; i++) { // get the moves of the bot from argv
@@ -41,7 +40,7 @@ int main(int argc, char *argv[]) {
     }
 
     char *ptr = (char *)Board;
-    while (!isFinished(Board, who_won)) {
+    while (!isFinished(Board, &who_won)) {
         if (user_turn) {
             printBoard(Board);
             char  x = -1;
@@ -67,10 +66,10 @@ int main(int argc, char *argv[]) {
         }
     }
     printBoard(Board);
-    if (*who_won == 2) {
+    if (draw(Board)) {
         printf("Draw\n");
     } else {
-        if (*who_won) {
+        if (who_won) {
             printf("User won\n");
         } else {
             printf("Bot won\n");
@@ -130,7 +129,7 @@ bool draw(char Board[Size][Size]) {
     return true;
 }
 
-bool isFinished(char Board[Size][Size], int* who_won) {
+bool isFinished(char Board[Size][Size], bool *who_won) {
     for (int i = 0; i < Size; i++) {
         if (Board[i][0] != ' ' && Board[i][0] == Board[i][1] && Board[i][1] == Board[i][2]) {
             *who_won = (Board[i][0] == 'X');
