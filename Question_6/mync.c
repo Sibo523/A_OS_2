@@ -8,11 +8,10 @@
 #include <stdbool.h>
 #include <signal.h>
 #include <time.h>
-#define index 3
-#include <sys/wait.h>
 #include <stdbool.h>
 #include <getopt.h> 
 #include <errno.h>
+#define index 3
 
 void runprogram(pid_t pid,char mode,int client_sock,int server_sock,const char *exe, char *arg)
 {
@@ -186,7 +185,6 @@ int create_server(char mode, int port, const char *exe, char *arg,int flag)
     char buffer[BUFFER_SIZE];
 
     if (strcmp(exe,"ttt") != 0){
-        puts(exe);
         perror("exe is not ttt sadge");
         exit(EXIT_FAILURE);
     }
@@ -244,12 +242,9 @@ int create_udp_server(char mode, int port, const char *exe, const char *arg, int
     char buffer[BUFFER_SIZE];
 
     if (strcmp(exe,"ttt") != 0){
-        puts(exe);
         perror("exe is not ttt sadge");
         exit(EXIT_FAILURE);
     }
-    exe = "../Question_1/ttt";
-
     server_sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (server_sock < 0)
     {
@@ -331,7 +326,6 @@ int create_uds_datagram_server(char mode, char *exe, const char* path, const cha
 
 
     if (strcmp(exe,"ttt") != 0){
-        puts(exe);
         perror("exe is not ttt sadge");
         exit(EXIT_FAILURE);
     }
@@ -546,44 +540,37 @@ int main(int argc, char *argv[]) {
             }
         }
         if(strstr(argv[i],"TCPS")){
-            puts("hello man");
             l= strtok(argv[i],"S");
             port = atoi(strtok(NULL,"S"));
             create_server(mode, port, exe, arg, flag);
         }
         if(strstr(argv[i],"TCPC")){
-            puts("hello man 2");
             l= strtok(argv[i],"C");
             port = atoi(strtok(NULL,"C"));
             port = atoi(strtok(NULL,"C"));
             create_client(port, mode, "127.0.0.1");
         }
         if(strstr(argv[i],"UDPS")){
-            puts("hello man 3");
             l = strtok(argv[i],"S");
             port = atoi(strtok(NULL,"S"));
             create_udp_server(mode, port, exe, arg, flag, timeout);
         }
         if(strstr(argv[i],"UDPC")){
-            puts("hello man 4");
             l = strtok(argv[i],"C");
             port = atoi(strtok(NULL,"C"));
             create_udp_client(port,mode, "127.0.0.1", timeout);
         }
         if(strstr(argv[i],"UDSSD")){
-            puts("hello man 5");
             char* path = strtok(argv[i],"D");
             path += 5;
             create_uds_datagram_server(mode, exe, path, arg, flag, timeout);
         }
         if(strstr(argv[i],"UDSCD")){
-            puts("hello man 6");
             char* path = strtok(argv[i],"D");
             path += 5;
             create_uds_datagram_client(mode, path, timeout);
         }
         if(strstr(argv[i],"UDSSS")){
-            puts("hello man 7");
             char *path = strtok(argv[i],"SSS");
             path += 5;
             printf("%s\n",exe);
@@ -591,7 +578,6 @@ int main(int argc, char *argv[]) {
             create_uds_stream_server(mode, path, arg, flag, path);
         }
         if(strstr(argv[i],"UDSCS")){
-            puts("hello man 8");
             char *path = strtok(argv[i],"SCS");
             path += 5;
             printf("%s\n",path);
