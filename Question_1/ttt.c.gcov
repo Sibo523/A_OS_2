@@ -1,0 +1,158 @@
+        -:    0:Source:ttt.c
+        -:    0:Graph:ttt.gcno
+        -:    0:Data:ttt.gcda
+        -:    0:Runs:24
+        -:    1:#include <stdio.h>
+        -:    2:#include <stdlib.h>
+        -:    3:#include <stdbool.h>
+        -:    4:#include <string.h>
+        -:    5:
+        -:    6:#define Size 3
+        -:    7:
+        -:    8:bool isFinished(char Board[Size][Size], int *who_won);
+        -:    9:bool isLegal(char BotMoves[9]);
+        -:   10:bool make_move(char *ptr, int pos, bool user_turn);
+        -:   11:bool draw(char Board[Size][Size]);
+        -:   12:void printBoard(char Board[Size][Size]);
+        -:   13:
+        -:   14:bool user_turn = true;
+        -:   15:
+       24:   16:int main(int argc, char *argv[]) {
+       24:   17:    if (argc != 2) { // Expect the program name and one argument containing 9 bot moves
+    #####:   18:        perror("Usage: of <9 bot moves>\n");
+    #####:   19:        perror(argv[1]);
+    #####:   20:        exit(EXIT_FAILURE);
+        -:   21:    }
+        -:   22:
+       24:   23:    if (strlen(argv[1]) != 9) { // Check if the provided moves string is exactly 9 characters long
+        4:   24:        printf("Invalid input length. Expected 9 bot moves.\n");
+        4:   25:        return -1;
+        -:   26:    }
+        -:   27:
+        -:   28:    char BotMoves[9];
+       20:   29:    int bot_index = 0;
+       20:   30:    int a = 2;
+       20:   31:    int* who_won = &a; // true User won, false Bot won
+       20:   32:    char Board[Size][Size] = { { ' ', ' ', ' ' }, { ' ', ' ', ' ' }, { ' ', ' ', ' ' } };
+        -:   33:
+      200:   34:    for (int i = 0; i < 9; i++) { // get the moves of the bot from argv
+      180:   35:        BotMoves[i] = argv[1][i];
+        -:   36:    }
+        -:   37:
+       20:   38:    if (!isLegal(BotMoves)) { // if the bot has an invalid input
+        2:   39:        printf("Invalid bot moves\n");
+        2:   40:        return -1;
+        -:   41:    }
+        -:   42:
+       18:   43:    char *ptr = (char *)Board;
+      135:   44:    while (!isFinished(Board, who_won)) {
+      117:   45:        if (user_turn) {
+       69:   46:            printBoard(Board);
+       69:   47:            char  x = -1;
+       69:   48:            printf("Enter your move ");
+       69:   49:            fflush(stdout);
+       69:   50:            scanf(" %c", &x);
+       69:   51:            int b = atoi(&x);
+       69:   52:            if (b > 10 || b < 0 || ptr[b-1] != ' ' ) {
+        9:   53:                printf("%d",b);
+        9:   54:                printf("Invalid move. Try again.\n");
+        9:   55:                continue;
+        -:   56:            }
+       60:   57:            printf("shit.\n");
+       60:   58:            make_move(ptr, b, user_turn);
+       60:   59:            user_turn = false;
+        -:   60:        } else {
+       60:   61:            while (ptr[BotMoves[bot_index] - '1'] == 'X' || ptr[BotMoves[bot_index] - '1'] == 'O') {
+       12:   62:                bot_index++;
+        -:   63:            }
+       48:   64:            make_move(ptr, BotMoves[bot_index] - '1', user_turn);
+       48:   65:            bot_index++;
+       48:   66:            user_turn = true;
+        -:   67:        }
+        -:   68:    }
+       18:   69:    printBoard(Board);
+       18:   70:    if (*who_won == 2) {
+        3:   71:        printf("Draw\n");
+        -:   72:    } else {
+       15:   73:        if (*who_won) {
+        9:   74:            printf("User won\n");
+        -:   75:        } else {
+        6:   76:            printf("Bot won\n");
+        -:   77:        }
+        -:   78:    }
+       18:   79:    return 0;
+        -:   80:}
+        -:   81:
+        -:   82:///////////////////////////////////////////////HELPERS///////////////////////////////////////////////
+       87:   83:void printBoard(char Board[Size][Size]) {
+      348:   84:    for (int i = 0; i < Size; i++) {
+     1044:   85:        for (int j = 0; j < Size; j++) {
+      783:   86:            printf("%c", Board[i][j]);
+      783:   87:            if (j < Size - 1) {
+      522:   88:                printf("|");
+        -:   89:            }
+        -:   90:        }
+      261:   91:        printf("\n");
+      261:   92:        if (i < Size - 1) {
+      174:   93:            printf("-----\n");
+        -:   94:        }
+        -:   95:    }
+       87:   96:}
+        -:   97:
+      108:   98:bool make_move(char *ptr, int pos, bool user_turn) {
+      108:   99:    if (user_turn) {
+       60:  100:        ptr[pos-1] = 'X';
+        -:  101:    } else {
+       48:  102:        ptr[pos] = 'O';
+        -:  103:    }
+      108:  104:    return true;
+        -:  105:}
+        -:  106:
+       20:  107:bool isLegal(char BotMoves[9]) { // I assume that the bot doesn't have a null somewhere in the moves
+       20:  108:    bool valid[9] = { false };
+        -:  109:
+      182:  110:    for (int i = 0; i < 9; i++) {
+      164:  111:        int move = BotMoves[i] - '0';
+      164:  112:        if (move > 0 && move <= 9 && !valid[move - 1]) {
+      162:  113:            valid[move - 1] = true;
+        -:  114:        } else {
+        2:  115:            printf("Invalid move: %d\n", move);
+        2:  116:            return false;
+        -:  117:        }
+        -:  118:    }
+       18:  119:    return true;
+        -:  120:}
+        -:  121:
+      120:  122:bool draw(char Board[Size][Size]) {
+      153:  123:    for (int i = 0; i < Size; i++) {
+      357:  124:        for (int j = 0; j < Size; j++) {
+      324:  125:            if (Board[i][j] != 'X' && Board[i][j] != 'O') {
+      117:  126:                return false;
+        -:  127:            }
+        -:  128:        }
+        -:  129:    }
+        3:  130:    return true;
+        -:  131:}
+        -:  132:
+      135:  133:bool isFinished(char Board[Size][Size], int* who_won) {
+      513:  134:    for (int i = 0; i < Size; i++) {
+      393:  135:        if (Board[i][0] != ' ' && Board[i][0] == Board[i][1] && Board[i][1] == Board[i][2]) {
+       15:  136:            *who_won = (Board[i][0] == 'X');
+       15:  137:            return true;
+        -:  138:        }
+     378*:  139:        if (Board[0][i] != ' ' && Board[0][i] == Board[1][i] && Board[1][i] == Board[2][i]) {
+    #####:  140:            *who_won = (Board[0][i] == 'X');
+    #####:  141:            return true;
+        -:  142:        }
+        -:  143:    }
+      120:  144:    if (Board[0][0] != ' ' && Board[0][0] == Board[1][1] && Board[1][1] == Board[2][2]) {
+    #####:  145:        *who_won = (Board[0][0] == 'X');
+    #####:  146:        return true;
+        -:  147:    }
+      120:  148:    if (Board[0][2] != ' ' && Board[0][2] == Board[1][1] && Board[1][1] == Board[2][0]) {
+    #####:  149:        *who_won = (Board[0][2] == 'X');
+    #####:  150:        return true;
+        -:  151:    }
+        -:  152:
+      120:  153:    return draw(Board); // if return true then true else it should be false 
+        -:  154:}

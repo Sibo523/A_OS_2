@@ -1,36 +1,54 @@
+#defult just runs the program when the some user enters but doesn't give him perms
+# I\O from and to the server
+#enter 1 3 4 6 0 9
+./mync -e "ttt 123456789"  TCPS4050
+./mync -e "ttt 123456789"  TCPC4050
+./mync -e "ttt 123456789"  UDPS4050
+./mync -e "ttt 123456789"  UDPC4050
+#####################################################
+#error cause there's not ttt
+./mync -e "tt 123456789" -b TCPS4050
+./mync -e "tt 123456789" -b TCPC4050
 
-# Test case 1: Valid input for the program should run on all lines that doesn't exit
-echo "3 3
-0 10 21
-4 0 17
-19 3 0
-1" | server
+#game with both TCP
+./mync -e "ttt 123456789" -b TCPS4050
+./mync -e "ttt 123456789" -b TCPC4050
 
-# Test case 2: Graph with too many edges
-echo "3 3 
-0 10 20 30 20 30 50 2 3 4 
-0" | server
+#chat with both 
+./mync "ttt 123456789" -b TCPS4050
+./mync "ttt 123456789" -b TCPC4050
 
-# Test case 3: Graph with negative weights
-echo "3 3
-0 10 -5
-15 0 20
-7 9 0
-0" | server
+#game with input output
+./mync -e "ttt 123456789" -i TCPS4050
+./mync -e "ttt 123456789" -o TCPC4050
 
-# Test case 4: Invalid start vertex
-echo "3 3
-0 10 20
-15 0 20
-7 9 0
--1" | server
+#game with input output
+./mync -e "ttt 123456789" -o TCPS4050
+./mync -e "ttt 123456789" -b TCPC4050
+####################################################
 
-# Test case 5: Zero vertices (exit)
-echo "-2 -3" | server
+#chat with both  UDP 
+./mync "ttt 123456789" -b UDPS4050
+./mync "ttt 123456789" -b UDPC4050
+#with timeout
+./mync -e "ttt 123456789" -i UDPS4050 -t-10
+./mync -e "ttt 123456789" -b UDPS4050 -t10
+./mync -e "ttt 123456789" -b UDPC4050 -t10
 
-# Test case 6: non int source (exit)
-echo "3 3
-0 10 20
-15 0 20
-7 9 0
-A" | server
+#game with input output
+./mync -e "ttt 123456789" -i UDPS4050
+./mync -e "ttt 123456789" -o UDPC4050
+####################################################
+
+#game UDSSDshalom I/O
+./mync -e "ttt 123456789" -i UDSSDshalom
+./mync -e "ttt 123456789" -o UDSCDshalom
+
+#game UDSSDshalom bb #not working
+./mync -e "ttt 123456789" -b UDSSSshalom
+./mync -e "ttt 123456789" -b UDSCSshalom
+
+#chat UDSSDshalom I/O
+./mync "ttt 123456789" -b UDSSSshalom
+./mync "ttt 123456789" -b UDSCSshalom
+####################################################

@@ -1,14 +1,16 @@
 
 CC = gcc
-CFLAGS = -Wall -Wextra
+CFLAGS = -g -Wall -fprofile-arcs -ftest-coverage
 
-all: mync ttt
+all: mync everyone
 
-ttt: main.c
-	$(CC) $(Flags) -o $@ $^
+mync: mync.c
+	$(CC) $(CFLAGS) -o mync $<
 
-mync: mynetcat.c
-	$(CC) $(CFLAGS) -o mync mynetcat.c
-
+everyone: 
+	$(MAKE) -C ../Question_1
+# test:all I use it manually
+# 	chmod +x test.sh
+# ./test.sh
 clean:
 	rm -f mync *.o ttt

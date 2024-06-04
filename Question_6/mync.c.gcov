@@ -1,0 +1,607 @@
+        -:    0:Source:mync.c
+        -:    0:Graph:mync.gcno
+        -:    0:Data:mync.gcda
+        -:    0:Runs:57
+        -:    0:Source is newer than graph
+        -:    1:#include <sys/un.h>
+        -:    2:#include <stdio.h>
+        -:    3:#include <stdlib.h>
+        -:    4:#include <string.h>
+        -:    5:#include <unistd.h>
+        -:    6:#include <arpa/inet.h>
+        -:    7:#include <sys/wait.h>
+        -:    8:#include <stdbool.h>
+        -:    9:#include <signal.h>
+        -:   10:#include <time.h>
+        -:   11:#define index 3
+        -:   12:#include <sys/wait.h>
+        -:   13:#include <stdbool.h>
+        -:   14:#include <getopt.h> 
+        -:   15:#include <errno.h>
+        -:   16:
+       24:   17:void runprogram(pid_t pid,char mode,int client_sock,int server_sock,const char *exe, char *arg)
+        -:   18:{
+       24:   19:    if (pid == 0) {
+       14:   20:        switch (mode) {
+        6:   21:            case 'i':
+        6:   22:                dup2(client_sock, 0);
+        6:   23:                break;
+        1:   24:            case 'o':
+        1:   25:                dup2(client_sock, 1);
+        1:   26:                break;
+        4:   27:            case 'b':
+        4:   28:                dup2(client_sock, 0);
+        4:   29:                dup2(client_sock, 1);
+        -:   30:                
+        4:   31:                break;
+        -:   32:        }
+        -:   33:           
+       14:   34:        execlp(exe, exe, arg, NULL);
+       14:   35:        perror("Execution of exe failed");
+        1:   36:        exit(EXIT_FAILURE);
+        -:   37:    }
+        -:   38:    
+        -:   39:    int status;
+       10:   40:    waitpid(pid, &status, 0);
+       10:   41:    if(client_sock == server_sock){
+        5:   42:        close(client_sock);
+        -:   43:    }
+        -:   44:    else{
+        5:   45:        close(server_sock);
+        5:   46:        close(client_sock);
+        -:   47:    }
+       10:   48:}
+        -:   49:
+        -:   50:// // mync -e “ttt 123456789” -i TCPS4050 -o TCPClocalhost,4455
+        -:   51:#define BUFFER_SIZE 1024
+       19:   52:void talking(int client_sock,pid_t pid,char* buffer){
+       19:   53:    if (pid == 0) { // Child process: read from server
+       20:   54:        while (1) {
+       28:   55:            ssize_t bytes_read = read(client_sock, buffer, BUFFER_SIZE - 1);
+       28:   56:            if (bytes_read <= 0) {
+        8:   57:                break; // Exit loop on read error or server disconnect
+        -:   58:            }
+       20:   59:            buffer[bytes_read] = '\0';
+       20:   60:            printf("Received from server: %s\n", buffer);
+        -:   61:        }
+        8:   62:        close(client_sock);
+        8:   63:        exit(0);
+        -:   64:    } else { // Parent process: write to server
+        -:   65:        while (1) {
+       45:   66:            printf("Enter message (-1 to quit): \n");
+       45:   67:            fgets(buffer, sizeof(buffer), stdin);
+       45:   68:            buffer[strcspn(buffer, "\n")] = '\0'; // Remove newline character
+        -:   69:
+       45:   70:            if (strcmp(buffer, "-1") == 0) {
+       10:   71:                break; // Exit loop if user enters -1
+        -:   72:            }
+        -:   73:
+       35:   74:            if(write(client_sock, buffer, strlen(buffer)) <= 0){
+        1:   75:                break;
+        -:   76:            }
+        -:   77:        }
+       11:   78:        close(client_sock);
+        -:   79:      
+        -:   80:
+       11:   81:        kill(pid, SIGKILL); // Kill child process reading from server
+        -:   82:    }
+       11:   83:}
+       10:   84:void talking_udp(int client_sock,pid_t pid,char* buffer, struct sockaddr_in server_addr){
+       10:   85:    if (pid == 0) { // Child process: read from server
+    #####:   86:        while (1) {
+    #####:   87:            ssize_t bytes_read = recvfrom(client_sock, buffer, BUFFER_SIZE,0,NULL, 0);
+    #####:   88:            if (bytes_read <= 0) {
+    #####:   89:                break; // Exit loop on read error or server disconnect
+        -:   90:            }
+    #####:   91:            buffer[bytes_read] = '\0';
+    #####:   92:            printf("Received from server: %s\n", buffer);
+        -:   93:        }
+    #####:   94:        close(client_sock);
+    #####:   95:        exit(0);
+        -:   96:    } else { // Parent process: write to server
+        -:   97:        while (1) {
+       41:   98:            printf("Enter message (-1 to quit): \n");
+       41:   99:            fgets(buffer, sizeof(buffer), stdin);
+       41:  100:            buffer[strcspn(buffer, "\n")] = '\0'; // Remove newline character
+       41:  101:            if (strcmp(buffer, "-1") == 0) {
+       10:  102:                break; // Exit loop if user enters -1
+        -:  103:            }
+        -:  104:
+       31:  105:            if(sendto(client_sock, buffer, strlen(buffer), 0, (struct sockaddr *)&server_addr, sizeof(server_addr)) <= 0){
+    #####:  106:                break;
+        -:  107:            }
+        -:  108:        }
+       10:  109:        close(client_sock);
+        -:  110:      
+       10:  111:        kill(pid, SIGKILL); // Kill child process reading from server
+        -:  112:        
+        -:  113:    }
+       10:  114:}
+        -:  115:
+        1:  116:void talking_udsd(int client_sock,pid_t pid,char* buffer, struct sockaddr_un server_addr)
+        -:  117:{
+        1:  118:    if (pid == 0) { // Child process: read from server
+    #####:  119:        while (1) {
+    #####:  120:            ssize_t bytes_read = recvfrom(client_sock, buffer, BUFFER_SIZE,0,NULL, 0);
+    #####:  121:            if (bytes_read <= 0) {
+    #####:  122:                perror("read failed");
+    #####:  123:                break; // Exit loop on read error or server disconnect
+        -:  124:            }
+    #####:  125:            buffer[bytes_read] = '\0';
+    #####:  126:            printf("Received from server: %s\n", buffer);
+        -:  127:        }
+    #####:  128:        close(client_sock);
+    #####:  129:        exit(0);
+        -:  130:    } else { // Parent process: write to server
+        -:  131:        while (1) {
+        2:  132:            printf("Enter message (-1 to quit): \n");
+        2:  133:            fgets(buffer, sizeof(buffer), stdin);
+        2:  134:            buffer[strcspn(buffer, "\n")] = '\0'; // Remove newline character
+        2:  135:            if (strcmp(buffer, "-1") == 0) {
+        1:  136:                break; // Exit loop if user enters -1
+        -:  137:            }
+        1:  138:            printf("%s\n",server_addr.sun_path);
+        1:  139:            if(sendto(client_sock, buffer, strlen(buffer), 0, (struct sockaddr *)&server_addr, sizeof(server_addr)) <= 0){
+    #####:  140:                perror("sendto failed");
+    #####:  141:                break;
+        -:  142:            }
+        -:  143:        }
+        1:  144:        close(client_sock);
+        -:  145:      
+        1:  146:        kill(pid, SIGKILL); // Kill child process reading from server
+        -:  147:        
+        -:  148:    }
+        1:  149:}
+        -:  150:
+        6:  151:int create_client(int port, char mode, const char *server_ip)
+        -:  152:{
+        -:  153:    int client_sock;
+        -:  154:    struct sockaddr_in server_addr;
+        -:  155:    char buffer[BUFFER_SIZE];
+        6:  156:    printf("%d\n",port);
+        6:  157:    client_sock = socket(AF_INET, SOCK_STREAM, 0);
+        6:  158:    if (client_sock < 0)
+        -:  159:    {
+    #####:  160:        perror("socket failed");
+    #####:  161:        exit(EXIT_FAILURE);
+        -:  162:    }
+        -:  163:
+        6:  164:    server_addr.sin_family = AF_INET;
+        6:  165:    server_addr.sin_port = htons(port);
+        6:  166:    server_addr.sin_addr.s_addr = inet_addr(server_ip);
+        -:  167:
+        6:  168:    if (connect(client_sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
+        -:  169:    {
+    #####:  170:        perror("connect failed");
+    #####:  171:        exit(EXIT_FAILURE);
+        -:  172:    }
+        6:  173:    pid_t pid = fork();
+       10:  174:    if (pid < 0) {
+    #####:  175:        perror("fork failed");
+    #####:  176:        exit(EXIT_FAILURE);
+        -:  177:    }
+        -:  178:
+       10:  179:    talking(client_sock,pid,buffer);
+        6:  180:    return 0;
+        -:  181:}
+        6:  182:int create_server(char mode, int port, const char *exe, char *arg,int flag)
+        -:  183:{
+        -:  184:    int server_sock, client_sock;
+        -:  185:    struct sockaddr_in server_addr, client_addr;
+        -:  186:    char buffer[BUFFER_SIZE];
+        -:  187:
+        6:  188:    if (strcmp(exe,"ttt") != 0){
+    #####:  189:        puts(exe);
+    #####:  190:        perror("exe is not ttt sadge");
+    #####:  191:        exit(EXIT_FAILURE);
+        -:  192:    }
+        6:  193:    exe = "../Question_1/ttt";
+        -:  194:
+        6:  195:    server_sock = socket(AF_INET, SOCK_STREAM, 0);
+        6:  196:    if (server_sock < 0)
+        -:  197:    {
+    #####:  198:        perror("socket failed");
+    #####:  199:        exit(EXIT_FAILURE);
+        -:  200:    }
+        -:  201:
+        6:  202:    int optval = 1;
+        6:  203:    setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+        -:  204:
+        6:  205:    server_addr.sin_family = AF_INET;
+        6:  206:    server_addr.sin_port = htons(port); // Convert port to network byte order
+        6:  207:    server_addr.sin_addr.s_addr = INADDR_ANY;
+        6:  208:    if (bind(server_sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
+        -:  209:    {
+    #####:  210:        perror("bind failed");
+    #####:  211:        exit(EXIT_FAILURE);
+        -:  212:    }
+        6:  213:    if (listen(server_sock, 5) < 0)
+        -:  214:    {
+    #####:  215:        perror("listen failed");
+    #####:  216:        exit(EXIT_FAILURE);
+        -:  217:    }
+        -:  218:
+        6:  219:    socklen_t client_addr_size = sizeof(client_addr);
+        6:  220:    client_sock = accept(server_sock, (struct sockaddr *)&client_addr, &client_addr_size);
+        6:  221:    if (client_sock < 0)
+        -:  222:    {
+    #####:  223:        perror("accept failed");
+    #####:  224:        exit(EXIT_FAILURE);
+        -:  225:    }
+        6:  226:    pid_t pid = fork();
+       12:  227:    if (pid < 0) {
+    #####:  228:        perror("fork failed");
+    #####:  229:        exit(EXIT_FAILURE);
+        -:  230:    }
+       12:  231:    if(flag){
+        4:  232:        talking(client_sock,pid,buffer);
+        -:  233:    }
+        -:  234:    else{
+        8:  235:        runprogram(pid,mode,client_sock,server_sock,exe,arg);
+        -:  236:    }
+        6:  237:    return 0;
+        -:  238:}
+        -:  239:
+        8:  240:int create_udp_server(char mode, int port, const char *exe, const char *arg, int run, int timeout)
+        -:  241:{
+        -:  242:    int server_sock;
+        -:  243:    struct sockaddr_in server_addr, client_addr;
+        -:  244:    char buffer[BUFFER_SIZE];
+        -:  245:
+        8:  246:    if (strcmp(exe,"ttt") != 0){
+        1:  247:        puts(exe);
+        1:  248:        perror("exe is not ttt sadge");
+        1:  249:        exit(EXIT_FAILURE);
+        -:  250:    }
+        7:  251:    exe = "../Question_1/ttt";
+        -:  252:
+        7:  253:    server_sock = socket(AF_INET, SOCK_DGRAM, 0);
+        7:  254:    if (server_sock < 0)
+        -:  255:    {
+    #####:  256:        perror("socket failed");
+    #####:  257:        exit(EXIT_FAILURE);
+        -:  258:    }
+        -:  259:
+        7:  260:    int optval = 1;
+        7:  261:    setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+        -:  262:
+        7:  263:    server_addr.sin_family = AF_INET;
+        7:  264:    server_addr.sin_port = htons(port); // Convert port to network byte order
+        7:  265:    server_addr.sin_addr.s_addr = INADDR_ANY;
+        7:  266:    if (bind(server_sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
+        -:  267:    {
+    #####:  268:        perror("bind failed");
+    #####:  269:        exit(EXIT_FAILURE);
+        -:  270:    }
+        -:  271:    
+        7:  272:    socklen_t client_addr_size = sizeof(client_addr);
+        7:  273:    memset(&client_addr,0 , client_addr_size);
+        7:  274:    size_t bytes = recvfrom(server_sock, buffer, BUFFER_SIZE,0,(struct sockaddr *)&client_addr, &client_addr_size);
+        7:  275:    printf("Received from client: %s\n", buffer);
+        -:  276:   
+        7:  277:    pid_t pid = fork();
+       15:  278:    if (pid < 0) {
+    #####:  279:        perror("fork failed");
+    #####:  280:        exit(EXIT_FAILURE);
+        -:  281:    }
+       15:  282:    if(timeout > 0){
+        6:  283:        alarm(timeout);
+        -:  284:    }
+       15:  285:    if(run){
+        3:  286:        talking_udp(server_sock,pid,buffer, client_addr);
+        -:  287:    }
+        -:  288:    else{  
+       12:  289:        runprogram(pid, mode, server_sock, server_sock, exe, arg);
+        -:  290:    }
+        -:  291:    
+        7:  292:    return 0;
+        -:  293:}
+        -:  294:
+        7:  295:int create_udp_client(int port, char mode, const char *server_ip, int timeout)
+        -:  296:{
+        -:  297:    int client_sock;
+        -:  298:    struct sockaddr_in server_addr;
+        -:  299:    char buffer[BUFFER_SIZE];
+        7:  300:    client_sock = socket(AF_INET, SOCK_DGRAM, 0);
+        7:  301:    if (client_sock < 0)
+        -:  302:    {
+    #####:  303:        perror("socket failed");
+    #####:  304:        exit(EXIT_FAILURE);
+        -:  305:    }
+        -:  306:
+        7:  307:    server_addr.sin_family = AF_INET;
+        7:  308:    server_addr.sin_port = htons(port);
+        7:  309:    server_addr.sin_addr.s_addr = inet_addr(server_ip);
+        -:  310:
+        7:  311:    sendto(client_sock, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&server_addr, sizeof(server_addr));
+        7:  312:    pid_t pid = fork();
+        7:  313:    if (pid < 0) {
+    #####:  314:        perror("fork failed");
+    #####:  315:        exit(EXIT_FAILURE);
+        -:  316:    }
+        7:  317:    if(timeout > 0){
+    #####:  318:        alarm(timeout);
+        -:  319:    }
+        -:  320:    
+        7:  321:    memset(buffer, 0, BUFFER_SIZE);
+        7:  322:    talking_udp(client_sock,pid,buffer, server_addr);
+        7:  323:    return 0;
+        -:  324:}
+        -:  325:
+        1:  326:int create_uds_datagram_server(char mode, char *exe, const char* path, const char *arg, int run, int timeout)
+        -:  327:{
+        -:  328:    int server_sock;
+        -:  329:    struct sockaddr_un server_addr, client_addr;
+        -:  330:    char buffer[BUFFER_SIZE];
+        -:  331:
+        -:  332:
+        1:  333:    if (strcmp(exe,"ttt") != 0){
+    #####:  334:        puts(exe);
+    #####:  335:        perror("exe is not ttt sadge");
+    #####:  336:        exit(EXIT_FAILURE);
+        -:  337:    }
+        -:  338:
+        1:  339:    server_sock = socket(AF_UNIX, SOCK_DGRAM, 0);
+        1:  340:    if (server_sock < 0)
+        -:  341:    {
+    #####:  342:        perror("socket failed");
+    #####:  343:        exit(EXIT_FAILURE);
+        -:  344:    }
+        -:  345:
+        1:  346:    int optval = 1;
+        -:  347:
+        1:  348:    server_addr.sun_family = AF_UNIX;
+        1:  349:    strcpy(server_addr.sun_path, path);
+        1:  350:    unlink(server_addr.sun_path);
+        1:  351:    if (bind(server_sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
+        -:  352:    {
+    #####:  353:        perror("bind failed");
+    #####:  354:        exit(EXIT_FAILURE);
+        -:  355:    }
+        -:  356:   
+        1:  357:    exe = "../Question_1/ttt";
+        1:  358:    socklen_t client_addr_len = sizeof(client_addr);
+        1:  359:    size_t bytes = recvfrom(server_sock, buffer, sizeof(buffer), 0, (struct sockaddr *)&client_addr, &client_addr_len);
+        1:  360:    printf("Received from client: %s\n", buffer);
+        -:  361:    
+        1:  362:    printf("lo nahon %s\n", client_addr.sun_path);
+        -:  363:
+        1:  364:    pid_t pid = fork();
+        2:  365:    if (pid < 0) {
+    #####:  366:        perror("fork failed");
+    #####:  367:        exit(EXIT_FAILURE);
+        -:  368:    }
+        2:  369:    if(timeout > 0){
+    #####:  370:        alarm(timeout);
+        -:  371:    }
+        2:  372:    if(run){
+    #####:  373:        talking_udsd(server_sock,pid,buffer, client_addr);
+        -:  374:    }
+        -:  375:    else{  
+        2:  376:        runprogram(pid, mode, server_sock, server_sock, exe, arg);
+        -:  377:    }
+        -:  378:    
+        1:  379:    return 0;
+        -:  380:}
+        -:  381:
+        1:  382:int create_uds_datagram_client(char mode, const char *path, int timeout)
+        -:  383:{
+        -:  384:    int client_sock;
+        -:  385:    struct sockaddr_un server_addr;
+        -:  386:    char buffer[BUFFER_SIZE];
+        1:  387:    strcpy(buffer, "barasi");
+        1:  388:    client_sock = socket(AF_UNIX, SOCK_DGRAM, 0);
+        1:  389:    if (client_sock < 0)
+        -:  390:    {
+    #####:  391:        perror("socket failed");
+    #####:  392:        exit(EXIT_FAILURE);
+        -:  393:    }
+        -:  394:
+        1:  395:    server_addr.sun_family = AF_UNIX;
+        1:  396:    strcpy(server_addr.sun_path, path);
+        -:  397:
+        1:  398:    sendto(client_sock, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&server_addr, sizeof(server_addr));
+        1:  399:    pid_t pid = fork();
+        1:  400:    if (pid < 0) {
+    #####:  401:        perror("fork failed");
+    #####:  402:        exit(EXIT_FAILURE);
+        -:  403:    }
+        1:  404:    if(timeout > 0){
+    #####:  405:        alarm(timeout);
+        -:  406:    }
+        -:  407:    
+        1:  408:    memset(buffer, 0, BUFFER_SIZE);
+        1:  409:    talking_udsd(client_sock,pid,buffer, server_addr);
+        1:  410:    return 0;
+        -:  411:}
+        -:  412:
+        2:  413:int create_uds_stream_server(char mode, char *exe, const char *arg, int flag, const char *path)
+        -:  414:{   
+        -:  415:    struct sockaddr_un server, client;
+        2:  416:    memset(&server, 0, sizeof(server));
+        2:  417:    memset(&client, 0, sizeof(client));
+        2:  418:    server.sun_family = AF_UNIX;
+        2:  419:    client.sun_family = AF_UNIX;
+        2:  420:    strcpy(server.sun_path, path);
+        2:  421:    server.sun_path[strlen(path)] = '\0';
+        -:  422:    int server_sock, client_sock;
+        -:  423:    char buffer[BUFFER_SIZE];
+        2:  424:    server_sock = socket(AF_UNIX, SOCK_STREAM, 0);
+        2:  425:    if (server_sock < 0)
+        -:  426:    {
+    #####:  427:        perror("socket failed");
+    #####:  428:        exit(EXIT_FAILURE);
+        -:  429:    }
+        2:  430:    unlink(server.sun_path);
+        2:  431:    int len = strlen(server.sun_path) + sizeof(server.sun_family);
+        2:  432:    printf("%s\n",server.sun_path);
+        2:  433:    if (bind(server_sock, (struct sockaddr *)&server, len) < 0)
+        -:  434:    {
+    #####:  435:        perror("bind failed");
+    #####:  436:        exit(EXIT_FAILURE);
+        -:  437:    }
+        2:  438:    if(listen(server_sock, 1) < 0){
+    #####:  439:        perror("listen failed");
+    #####:  440:        exit(EXIT_FAILURE);
+        -:  441:    }
+        2:  442:    socklen_t client_addr_size = sizeof(client);
+        2:  443:    client_sock = accept(server_sock, (struct sockaddr *)&client, &client_addr_size);
+        2:  444:    if(client_sock < 0)
+        -:  445:    {
+    #####:  446:        perror("accept failed");
+    #####:  447:        exit(EXIT_FAILURE);
+        -:  448:    }
+        -:  449:
+        2:  450:    pid_t pid = fork();
+        3:  451:    if (pid < 0) {
+    #####:  452:        perror("fork failed");
+    #####:  453:        exit(EXIT_FAILURE);
+        -:  454:    }
+        3:  455:    if(flag){
+        1:  456:        talking(client_sock,pid,buffer);
+        -:  457:    }
+        -:  458:    else{
+        2:  459:        runprogram(pid,mode,client_sock,server_sock,exe,arg);
+        -:  460:    }
+        2:  461:    return 0;
+        -:  462:}
+        -:  463:
+        2:  464:int create_uds_stream_client(char mode, const char *path)
+        -:  465:{
+        -:  466:
+        -:  467:    int client_sock;
+        2:  468:    struct sockaddr_un server_addr = {
+        -:  469:        .sun_family = AF_UNIX
+        -:  470:    };
+        -:  471:    char buffer[BUFFER_SIZE];
+        2:  472:    client_sock = socket(AF_UNIX, SOCK_STREAM, 0);
+        2:  473:    if (client_sock < 0)
+        -:  474:    {
+    #####:  475:        perror("socket failed");
+    #####:  476:        exit(EXIT_FAILURE);
+        -:  477:    }
+        2:  478:    strcpy(server_addr.sun_path, path);
+        2:  479:    if (connect(client_sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
+        -:  480:    {
+    #####:  481:        perror("connect failed");
+    #####:  482:        exit(EXIT_FAILURE);
+        -:  483:    }
+        2:  484:    pid_t pid = fork();
+        4:  485:    if (pid < 0) {
+    #####:  486:        perror("fork failed");
+    #####:  487:        exit(EXIT_FAILURE);
+        -:  488:    }
+        -:  489:
+        4:  490:    talking(client_sock,pid,buffer);
+        2:  491:    return 0;
+        -:  492:}
+        -:  493:
+        -:  494:// ./mync -e "ttt 123456789" -i UDSSD
+        -:  495:
+       35:  496:int main(int argc, char *argv[]) {
+       35:  497:    int flag = 1;
+        -:  498:    // char *execArgs = NULL;
+       35:  499:    char mode = 0;
+        -:  500:    // int type ;
+       35:  501:    int port = 0;
+        -:  502:    char *exe = "you forgot me";
+        -:  503:    char *arg = "you forgot me";
+        -:  504:
+       35:  505:    int timeout = -1;
+        -:  506:    int opt;
+       88:  507:    while ((opt = getopt(argc, argv, "e:iobt:")) != -1) {
+       55:  508:        switch (opt) {
+       20:  509:            case 'e':
+        -:  510:             // optarg now points to the argument of -e
+       20:  511:                puts("has e");
+       20:  512:                flag = 0;
+       20:  513:                break;
+        6:  514:            case 'i':
+        6:  515:                mode = opt;
+        6:  516:                puts("has i");
+        6:  517:                break;
+        7:  518:            case 'o':
+        7:  519:                mode = opt;
+        7:  520:                puts("has o");
+        7:  521:                break;
+       19:  522:            case 'b':
+       19:  523:                mode = opt;
+       19:  524:                puts("has b");
+       19:  525:                break;
+        2:  526:            case 't':
+        2:  527:                puts("has t");
+        2:  528:                timeout = atoi(optarg);
+        2:  529:                if(timeout <= 0){
+        1:  530:                    fprintf(stderr, "Timeout must be a positive integer\n");
+        1:  531:                    exit(EXIT_FAILURE);
+        -:  532:                }
+        1:  533:                break;
+        1:  534:            default:
+        1:  535:                fprintf(stderr, "Usage: %s [-e execArgs] -{i,o,b} TCPS4050/TCPC4050\n", argv[0]);
+        1:  536:                exit(EXIT_FAILURE);
+        -:  537:        }
+        -:  538:    }
+        -:  539:    char *l;
+        -:  540:    for (int i = 0; i < argc; i++) {
+      182:  541:        if (strstr(argv[i], "ttt")) {
+      150:  542:            if(i < argc -1)
+       33:  543:            {
+        -:  544:                exe = strtok(argv[i]," ");
+       33:  545:                arg = strtok(NULL," ");
+       33:  546:            }
+        -:  547:        }
+        -:  548:        if(strstr(argv[i],"TCPS")){
+        -:  549:            puts("hello man");
+        -:  550:            l= strtok(argv[i],"S");
+        -:  551:            port = atoi(strtok(NULL,"S"));
+      150:  552:            create_server(mode, port, exe, arg, flag);
+        6:  553:        }
+        6:  554:        if(strstr(argv[i],"TCPC")){
+        6:  555:            puts("hello man 2");
+        6:  556:            l= strtok(argv[i],"C");
+        -:  557:            port = atoi(strtok(NULL,"C"));
+      150:  558:            port = atoi(strtok(NULL,"C"));
+        6:  559:            create_client(port, mode, "127.0.0.1");
+        6:  560:        }
+        6:  561:        if(strstr(argv[i],"UDPS")){
+        6:  562:            puts("hello man 3");
+        6:  563:            l = strtok(argv[i],"S");
+        -:  564:            port = atoi(strtok(NULL,"S"));
+      150:  565:            create_udp_server(mode, port, exe, arg, flag, timeout);
+        8:  566:        }
+        8:  567:        if(strstr(argv[i],"UDPC")){
+        8:  568:            puts("hello man 4");
+        8:  569:            l = strtok(argv[i],"C");
+        -:  570:            port = atoi(strtok(NULL,"C"));
+      149:  571:            create_udp_client(port,mode, "127.0.0.1", timeout);
+        7:  572:        }
+        7:  573:        if(strstr(argv[i],"UDSSD")){
+        7:  574:            puts("hello man 5");
+        7:  575:            char* path = strtok(argv[i],"D");
+        -:  576:            path += 5;
+      149:  577:            create_uds_datagram_server(mode, exe, path, arg, flag, timeout);
+        1:  578:        }
+        1:  579:        if(strstr(argv[i],"UDSCD")){
+        1:  580:            puts("hello man 6");
+        1:  581:            char* path = strtok(argv[i],"D");
+        -:  582:            path += 5;
+      149:  583:            create_uds_datagram_client(mode, path, timeout);
+        1:  584:        }
+        1:  585:        if(strstr(argv[i],"UDSSS")){
+        1:  586:            puts("hello man 7");
+        1:  587:            char *path = strtok(argv[i],"SSS");
+        -:  588:            path += 5;
+      149:  589:            printf("%s\n",exe);
+        2:  590:            printf("%s\n",path);
+        2:  591:            create_uds_stream_server(mode, path, arg, flag, path);
+        2:  592:        }
+        2:  593:        if(strstr(argv[i],"UDSCS")){
+        2:  594:            puts("hello man 8");
+        2:  595:            char *path = strtok(argv[i],"SCS");
+        -:  596:            path += 5;
+      149:  597:            printf("%s\n",path);
+        2:  598:            create_uds_stream_client(mode, path);
+        2:  599:        }
+        2:  600:    }
+        2:  601:    return 0;
+        2:  602:}

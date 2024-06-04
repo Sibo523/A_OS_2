@@ -1,13 +1,13 @@
 CC = gcc 
-Flags =  -Wall -O2 -fprofile-arcs -ftest-coverage
+Flags = -g -Wall -fprofile-arcs -ftest-coverage
 
 all:ttt
 
-ttt: main.c
+ttt: ttt.c
 	$(CC) $(Flags) -o $@ $^
-test:
+test:all
 	chmod +x test.sh
 	./test.sh
 Phony: clean all 
 clean:
-	rm -f ttt *.gcda *.gcno *.gcov *.info
+	rm -f ttt 
