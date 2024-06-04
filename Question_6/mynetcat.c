@@ -16,7 +16,6 @@
 
 void runprogram(pid_t pid,char mode,int client_sock,int server_sock,const char *exe, char *arg)
 {
-    printf("exe:%s\n", exe);
     
     if (pid == 0) {
         switch (mode) {
@@ -137,7 +136,6 @@ void talking_udsd(int client_sock,pid_t pid,char* buffer, struct sockaddr_un ser
             if (strcmp(buffer, "-1") == 0) {
                 break; // Exit loop if user enters -1
             }
-            printf("%s\n",server_addr.sun_path);
             if(sendto(client_sock, buffer, strlen(buffer), 0, (struct sockaddr *)&server_addr, sizeof(server_addr)) <= 0){
                 perror("sendto failed");
                 break;
@@ -155,7 +153,6 @@ int create_client(int port, char mode, const char *server_ip)
     int client_sock;
     struct sockaddr_in server_addr;
     char buffer[BUFFER_SIZE];
-    printf("%d\n",port);
     client_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (client_sock < 0)
     {
@@ -188,7 +185,6 @@ int create_server(char mode, int port, const char *exe, char *arg,int flag)
     char buffer[BUFFER_SIZE];
 
     if (strcmp(exe,"ttt") != 0){
-        puts(exe);
         perror("exe is not ttt sadge");
         exit(EXIT_FAILURE);
     }
@@ -246,7 +242,6 @@ int create_udp_server(char mode, int port, const char *exe, const char *arg, int
     char buffer[BUFFER_SIZE];
 
     if (strcmp(exe,"ttt") != 0){
-        puts(exe);
         perror("exe is not ttt sadge");
         exit(EXIT_FAILURE);
     }
@@ -333,7 +328,6 @@ int create_uds_datagram_server(char mode, char *exe, const char* path, const cha
 
 
     if (strcmp(exe,"ttt") != 0){
-        puts(exe);
         perror("exe is not ttt sadge");
         exit(EXIT_FAILURE);
     }
@@ -356,12 +350,10 @@ int create_uds_datagram_server(char mode, char *exe, const char* path, const cha
         exit(EXIT_FAILURE);
     }
    
-    exe = "../Question_1/ttt";
     socklen_t client_addr_len = sizeof(client_addr);
     size_t bytes = recvfrom(server_sock, buffer, sizeof(buffer), 0, (struct sockaddr *)&client_addr, &client_addr_len);
     printf("Received from client: %s\n", buffer);
     
-    printf("lo nahon %s\n", client_addr.sun_path);
 
     pid_t pid = fork();
     if (pid < 0) {
@@ -431,7 +423,6 @@ int create_uds_stream_server(char mode, char *exe, const char *arg, int flag, co
     }
     unlink(server.sun_path);
     int len = strlen(server.sun_path) + sizeof(server.sun_family);
-    printf("%s\n",server.sun_path);
     if (bind(server_sock, (struct sockaddr *)&server, len) < 0)
     {
         perror("bind failed");
@@ -585,14 +576,11 @@ int main(int argc, char *argv[]) {
         if(strstr(argv[i],"UDSSS")){
             char *path = strtok(argv[i],"SSS");
             path += 5;
-            printf("%s\n",exe);
-            printf("%s\n",path);
             create_uds_stream_server(mode, path, arg, flag, path);
         }
         if(strstr(argv[i],"UDSCS")){
             char *path = strtok(argv[i],"SCS");
             path += 5;
-            printf("%s\n",path);
             create_uds_stream_client(mode, path);
         }
     }
