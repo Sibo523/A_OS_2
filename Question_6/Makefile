@@ -14,3 +14,5 @@ everyone:
 # ./test.sh
 clean:
 	rm -f mync *.o ttt
+super_clean:
+	$(MAKE) -C ../Question_1 clean
