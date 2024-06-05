@@ -489,9 +489,7 @@ int create_uds_stream_client(char mode, const char *path)
 
 int main(int argc, char *argv[]) {
     int flag = 1;
-    // char *execArgs = NULL;
     char mode = 0;
-    // int type ;
     int port = 0;
     char *exe = "you forgot me";
     char *arg = "you forgot me";
